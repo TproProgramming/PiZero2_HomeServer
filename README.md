@@ -52,6 +52,13 @@ This repository documents my process of setting up a home web server using the R
 - Modify the content as needed, then save and exit (`CTRL + X`, then `Y` and `Enter`).
 - Refresh your browser to see the changes.
 
+### 6. Moving files using scp 
+ - Make sure you have the correct permissions set.
+ - Transfer files using secure copy
+   ```sh
+   scp example.txt pi@<IP ADDRESS>:/home/pi/
+   ```
+
 ## Next Steps
 - Set up **PHP** or **Python (Flask/Django)** for dynamic content.
 - Configure **port forwarding** to access the server externally.
