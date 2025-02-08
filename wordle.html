@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Wordle Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+
+        .game-board {
+            display: grid;
+            gap: 5px;
+            margin: 20px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+
+        .tile {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            font-weight: bold;
+            background-color: white;
+            text-transform: uppercase;
+        }
+
+        .correct {
+            background-color: #6aaa64;
+            color: white;
+            border-color: #6aaa64;
+        }
+
+        .wrong-position {
+            background-color: #c9b458;
+            color: white;
+            border-color: #c9b458;
+        }
+
+        .incorrect {
+            background-color: #787c7e;
+            color: white;
+            border-color: #787c7e;
+        }
+
+        .keyboard {
+            display: grid;
+            gap: 5px;
+            margin: 20px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .key {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #d3d6da;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wordle Clone</h1>
+    <div class="game-board" id="gameBoard"></div>
+    <div class="keyboard" id="keyboard"></div>
+    <div class="message" id="message"></div>
+
+    <script>
+        const WORD_LENGTH = 5;
+        const MAX_GUESSES = 6;
+        const WORDS = [
+            // A words
+            'ABOUT', 'APPLE', 'ALIVE', 'AUDIO', 'ARMOR',
+            // B words
+            'BEACH', 'BRAND', 'BRAVE', 'BRICK', 'BEGUN',
+            // C words
+            'CACHE', 'CLAIM', 'CRANE', 'CURSE', 'CYCLE',
+            // D words
+            'DANCE', 'DREAM', 'DRINK', 'DROVE', 'DRAFT',
+            // E words
+            'EARTH', 'ENTER', 'EQUAL', 'EVENT', 'EXACT',
+            // F words
+            'FANCY', 'FLASH', 'FLUTE', 'FRAME', 'FRESH',
+            // G words
+            'GRACE', 'GRAND', 'GREEN', 'GHOST', 'GUARD',
+            // H words
+            'HAPPY', 'HEART', 'HOUSE', 'HONEY', 'HEAVY',
+            // I words
+            'IMAGE', 'INPUT', 'INDEX', 'IDEAL', 'IVORY',
+            // J words
+            'JUICE', 'JOINT', 'JUDGE', 'JAZZY', 'JELLY',
+            // K words
+            'KNIFE', 'KNOWN', 'KNOCK', 'KINKY', 'KAYAK',
+            // L words
+            'LIGHT', 'LEARN', 'LOGIC', 'LUNAR', 'LEMON',
+            // M words
+            'MAGIC', 'MUSIC', 'METAL', 'MONTH', 'MOUSE',
+            // N words
+            'NOISE', 'NOBLE', 'NIGHT', 'NORTH', 'NEGRO',
+            // O words
+            'OCEAN', 'ORBIT', 'OFFER', 'OPERA', 'OLIVE',
+            // P words
+            'PAINT', 'PEACE', 'PIANO', 'POWER', 'PRICE',
+            // Q words
+            'QUEEN', 'QUIET', 'QUICK', 'QUOTE', 'QUILT',
+            // R words
+            'RADIO', 'RIVER', 'ROUND', 'ROYAL', 'ROBOT',
+            // S words
+            'SHINE', 'SMILE', 'STORM', 'SWEET', 'SWING',
+            // T words
+            'TABLE', 'TRAIN', 'TOUCH', 'TRACE', 'TRIBE',
+            // U words
+            'ULTRA', 'UNITY', 'UNDER', 'URBAN', 'USAGE',
+            // V words
+            'VALUE', 'VOICE', 'VIDEO', 'VIRUS', 'VINYL',
+            // W words
+            'WATER', 'WORLD', 'WATCH', 'WOUND', 'WITCH',
+            // X words
+            'XEROX', 'XYLEM',
+            // Y words
+            'YIELD', 'YOUNG', 'YOUTH', 'YEARLY',
+            // Z words
+            'ZEBRA', 'ZONES', 'ZOOM'
+        ];
+        
+        let targetWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+        let currentRow = 0;
+        let currentTile = 0;
+        let gameOver = false;
+
+        // Initialize game board
+        function createGameBoard() {
+            const gameBoard = document.getElementById('gameBoard');
+            for (let i = 0; i < MAX_GUESSES; i++) {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let j = 0; j < WORD_LENGTH; j++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    row.appendChild(tile);
+                }
+                gameBoard.appendChild(row);
+            }
+        }
+
+        // Initialize keyboard
+        function createKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            const rows = [
+                ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+                ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+                ['Enter', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '←']
+            ];
+
+            rows.forEach(row => {
+                const keyboardRow = document.createElement('div');
+                keyboardRow.className = 'keyboard-row';
+                row.forEach(key => {
+                    const button = document.createElement('button');
+                    button.className = 'key';
+                    button.textContent = key;
+                    button.onclick = () => handleKeyInput(key);
+                    keyboardRow.appendChild(button);
+                });
+                keyboard.appendChild(keyboardRow);
+            });
+        }
+
+        function handleKeyInput(key) {
+            if (gameOver) return;
+
+            if (key === 'Enter') {
+                if (currentTile === WORD_LENGTH) {
+                    checkGuess();
+                }
+            } else if (key === '←') {
+                if (currentTile > 0) {
+                    currentTile--;
+                    const tile = document.querySelector(`.row:nth-child(${currentRow + 1}) .tile:nth-child(${currentTile + 1})`);
+                    tile.textContent = '';
+                }
+            } else if (currentTile < WORD_LENGTH) {
+                const tile = document.querySelector(`.row:nth-child(${currentRow + 1}) .tile:nth-child(${currentTile + 1})`);
+                tile.textContent = key;
+                currentTile++;
+            }
+        }
+
+        function checkGuess() {
+            const row = document.querySelectorAll(`.row:nth-child(${currentRow + 1}) .tile`);
+            let guess = '';
+            row.forEach(tile => guess += tile.textContent);
+
+            const targetArray = targetWord.split('');
+            const guessArray = guess.split('');
+
+            // Check for correct letters
+            guessArray.forEach((letter, index) => {
+                if (letter === targetArray[index]) {
+                    row[index].classList.add('correct');
+                } else if (targetArray.includes(letter)) {
+                    row[index].classList.add('wrong-position');
+                } else {
+                    row[index].classList.add('incorrect');
+                }
+            });
+
+            if (guess === targetWord) {
+                gameOver = true;
+                document.getElementById('message').textContent = 'Congratulations! You won!';
+                return;
+            }
+
+            currentRow++;
+            currentTile = 0;
+
+            if (currentRow === MAX_GUESSES) {
+                gameOver = true;
+                document.getElementById('message').textContent = `Game Over! The word was ${targetWord}`;
+            }
+        }
+
+        // Initialize game
+        createGameBoard();
+        createKeyboard();
+
+        // Handle keyboard input
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleKeyInput('Enter');
+            } else if (e.key === 'Backspace') {
+                handleKeyInput('←');
+            } else if (/^[A-Za-z]$/.test(e.key)) {
+                handleKeyInput(e.key.toUpperCase());
+            }
+        });
+    </script>
+</body>
+</html>
