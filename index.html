@@ -1,49 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Under Construction</title>
-	<a href="wordle.html" class="game-button">Play Wordle</a>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 50px;
-            background-color: #f4f4f4;
-        }
-        .image-container {
-            display: inline-block;
-            background: #fff;
-            padding: 10px;
-            border: 1px solid #ccc;
-            margin-bottom: 20px;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-        .game-button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 18px;
-            transition: background-color 0.3s;
-            margin-top: 20px;
-        }
-        .game-button:hover {
-            background-color: #45a049;
-        }
-    </style>
+    <title>Retro Game Arcade</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <h1>🚧 Under Construction 🚧</h1>
-    <div class="image-container">
-        <img src="images/cade.jpg" alt="Under Construction Image">
+    <div class="container">
+        <header class="site-header">
+            <h1 class="site-title glitch-effect">Retro Arcade</h1>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="#" class="nav-link">Games</a>
+                <a href="#" class="nav-link">Highscores</a>
+            </nav>
+        </header>
+
+        <div class="games-grid">
+            <div class="game-card">
+                <h2 class="game-title">Pong</h2>
+                <p class="game-description">Classic paddle and ball game</p>
+                <a href="pong.html" class="btn">Play Now</a>
+            </div>
+            <div class="game-card">
+                <h2 class="game-title">Wordle</h2>
+                <p class="game-description">Guess the hidden word</p>
+                <a href="wordle.html" class="btn">Play Now</a>
+            </div>
+        </div>
     </div>
-    <p>Check back soon!</p>
 </body>
 </html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pong Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        #gameCanvas {
+            border: 2px solid white;
+            background: black;
+            margin: 20px;
+        }
+        
+        #score {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px 20px 10px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        #controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #gameMode {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Left: 0 | Right: 0</div>
+    <div id="gameMode">
+        <button id="singlePlayerBtn">Single Player</button>
+        <button id="twoPlayerBtn">Two Players</button>
+    </div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <button id="startButton">Start Game</button>
+    <div id="controls">
+        Single Player: W/S keys | Two Players: W/S and Up/Down arrows
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const scoreDisplay = document.getElementById('score');
+        const singlePlayerBtn = document.getElementById('singlePlayerBtn');
+        const twoPlayerBtn = document.getElementById('twoPlayerBtn');
+
+        let isSinglePlayer = true;
+        singlePlayerBtn.style.background = '#45a049';
+
+        // Game objects
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 10,
+            speed: 5,
+            dx: 5,
+            dy: 5
+        };
+
+        const paddleHeight = 100;
+        const paddleWidth = 10;
+        const leftPaddle = {
+            x: 0,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 0,
+            speed: 8
+        };
+
+        const rightPaddle = {
+            x: canvas.width - paddleWidth,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 0,
+            speed: 8
+        };
+
+        let leftScore = 0;
+        let rightScore = 0;
+        let gameInterval;
+        let isGameRunning = false;
+
+        // Key states
+        const keys = {
+            w: false,
+            s: false,
+            ArrowUp: false,
+            ArrowDown: false
+        };
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle(paddle) {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+        }
+
+        function drawCenterLine() {
+            ctx.setLineDash([5, 15]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.strokeStyle = 'white';
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = -ball.dx;
+            ball.dy = Math.random() * 10 - 5;
+            ball.speed = 5; // Reset ball speed
+        }
+
+        function updateAI() {
+            // Predictive AI movement
+            const prediction = ball.y + (ball.dy * (canvas.width - ball.x) / ball.dx);
+            const paddleCenter = rightPaddle.y + (paddleHeight / 2);
+            const targetY = Math.min(Math.max(prediction, paddleHeight / 2), canvas.height - paddleHeight / 2);
+            
+            // Add some reaction delay and slight randomness
+            const reactionSpeed = 0.15;
+            const randomness = Math.random() * 20 - 10;
+            
+            if (paddleCenter < targetY - 20 + randomness) {
+                rightPaddle.y += rightPaddle.speed * reactionSpeed;
+            } else if (paddleCenter > targetY + 20 + randomness) {
+                rightPaddle.y -= rightPaddle.speed * reactionSpeed;
+            }
+        }
+
+        function updatePaddles() {
+            // Left paddle
+            if (keys.w) leftPaddle.y -= leftPaddle.speed;
+            if (keys.s) leftPaddle.y += leftPaddle.speed;
+
+            // Right paddle (only in two-player mode)
+            if (!isSinglePlayer) {
+                if (keys.ArrowUp) rightPaddle.y -= rightPaddle.speed;
+                if (keys.ArrowDown) rightPaddle.y += rightPaddle.speed;
+            } else {
+                updateAI();
+            }
+
+            // Keep paddles in bounds
+            [leftPaddle, rightPaddle].forEach(paddle => {
+                if (paddle.y < 0) paddle.y = 0;
+                if (paddle.y + paddle.height > canvas.height) {
+                    paddle.y = canvas.height - paddle.height;
+                }
+            });
+        }
+
+        function checkCollision(ball, paddle) {
+            return ball.x + ball.radius > paddle.x && 
+                   ball.x - ball.radius < paddle.x + paddle.width &&
+                   ball.y + ball.radius > paddle.y && 
+                   ball.y - ball.radius < paddle.y + paddle.height;
+        }
+
+        function updateBall() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Top and bottom collisions
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.dy = -ball.dy;
+            }
+
+            // Paddle collisions
+            if (checkCollision(ball, leftPaddle) || checkCollision(ball, rightPaddle)) {
+                ball.dx = -ball.dx * 1.1; // Increase speed slightly
+                ball.dy += (Math.random() - 0.5) * 4; // Add some randomness
+            }
+
+            // Scoring
+            if (ball.x + ball.radius > canvas.width) {
+                leftScore++;
+                resetBall();
+            } else if (ball.x - ball.radius < 0) {
+                rightScore++;
+                resetBall();
+            }
+
+            scoreDisplay.textContent = `Left: ${leftScore} | Right: ${rightScore}`;
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawCenterLine();
+            drawBall();
+            drawPaddle(leftPaddle);
+            drawPaddle(rightPaddle);
+            
+            updatePaddles();
+            updateBall();
+        }
+
+        function startGame() {
+            if (isGameRunning) return;
+            
+            isGameRunning = true;
+            leftScore = 0;
+            rightScore = 0;
+            resetBall();
+            gameInterval = setInterval(gameLoop, 1000 / 60);
+            startButton.textContent = 'Reset Game';
+        }
+
+        // Game mode buttons
+        singlePlayerBtn.addEventListener('click', () => {
+            isSinglePlayer = true;
+            singlePlayerBtn.style.background = '#45a049';
+            twoPlayerBtn.style.background = '#4CAF50';
+            if (isGameRunning) {
+                clearInterval(gameInterval);
+                isGameRunning = false;
+                startButton.textContent = 'Start Game';
+            }
+        });
+
+        twoPlayerBtn.addEventListener('click', () => {
+            isSinglePlayer = false;
+            twoPlayerBtn.style.background = '#45a049';
+            singlePlayerBtn.style.background = '#4CAF50';
+            if (isGameRunning) {
+                clearInterval(gameInterval);
+                isGameRunning = false;
+                startButton.textContent = 'Start Game';
+            }
+        });
+
+        startButton.addEventListener('click', () => {
+            if (isGameRunning) {
+                clearInterval(gameInterval);
+                isGameRunning = false;
+                startButton.textContent = 'Start Game';
+            }
+            startGame();
+        });
+
+        // Key event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.key in keys) {
+                keys[e.key] = true;
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key in keys) {
+                keys[e.key] = false;
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

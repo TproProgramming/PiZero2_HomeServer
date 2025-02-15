@@ -4,13 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Wordle Clone</title>
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         body {
-            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-color: #f0f0f0;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #33ff33;
+            text-shadow: 3px 3px #008800;
+            margin-bottom: 20px;
         }
 
         .game-board {
@@ -28,29 +35,31 @@
         .tile {
             width: 60px;
             height: 60px;
-            border: 2px solid #ccc;
+            border: 2px solid #33ff33;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 2em;
             font-weight: bold;
-            background-color: white;
+            background-color: #000;
+            color: #33ff33;
             text-transform: uppercase;
+            transition: all 0.3s ease;
         }
 
-        .correct {
+        .tile.correct {
             background-color: #6aaa64;
             color: white;
             border-color: #6aaa64;
         }
 
-        .wrong-position {
+        .tile.wrong-position {
             background-color: #c9b458;
             color: white;
             border-color: #c9b458;
         }
 
-        .incorrect {
+        .tile.incorrect {
             background-color: #787c7e;
             color: white;
             border-color: #787c7e;
@@ -70,17 +79,47 @@
 
         .key {
             padding: 10px 15px;
-            border: none;
+            border: 2px solid #33ff33;
             border-radius: 5px;
-            background-color: #d3d6da;
+            background-color: #000;
             cursor: pointer;
             font-weight: bold;
+            color: #33ff33;
+            min-width: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .key:hover {
+            background-color: #33ff33;
+            color: #000;
+            box-shadow: 0 0 10px #33ff33;
+        }
+
+        .key.correct {
+            background-color: #6aaa64;
+            color: white;
+            border-color: #6aaa64;
+        }
+
+        .key.wrong-position {
+            background-color: #c9b458;
+            color: white;
+            border-color: #c9b458;
+        }
+
+        .key.incorrect {
+            background-color: #787c7e;
+            color: white;
+            border-color: #787c7e;
         }
 
         .message {
             margin-top: 20px;
             font-size: 1.2em;
             font-weight: bold;
+            color: #33ff33;
+            text-shadow: 2px 2px #008800;
         }
     </style>
 </head>
@@ -91,60 +130,36 @@
     <div class="message" id="message"></div>
 
     <script>
+        // [Previous constants and variables remain the same]
         const WORD_LENGTH = 5;
         const MAX_GUESSES = 6;
         const WORDS = [
-            // A words
+            // [Previous word list remains the same]
             'ABOUT', 'APPLE', 'ALIVE', 'AUDIO', 'ARMOR',
-            // B words
             'BEACH', 'BRAND', 'BRAVE', 'BRICK', 'BEGUN',
-            // C words
             'CACHE', 'CLAIM', 'CRANE', 'CURSE', 'CYCLE',
-            // D words
             'DANCE', 'DREAM', 'DRINK', 'DROVE', 'DRAFT',
-            // E words
             'EARTH', 'ENTER', 'EQUAL', 'EVENT', 'EXACT',
-            // F words
             'FANCY', 'FLASH', 'FLUTE', 'FRAME', 'FRESH',
-            // G words
             'GRACE', 'GRAND', 'GREEN', 'GHOST', 'GUARD',
-            // H words
             'HAPPY', 'HEART', 'HOUSE', 'HONEY', 'HEAVY',
-            // I words
             'IMAGE', 'INPUT', 'INDEX', 'IDEAL', 'IVORY',
-            // J words
             'JUICE', 'JOINT', 'JUDGE', 'JAZZY', 'JELLY',
-            // K words
             'KNIFE', 'KNOWN', 'KNOCK', 'KINKY', 'KAYAK',
-            // L words
             'LIGHT', 'LEARN', 'LOGIC', 'LUNAR', 'LEMON',
-            // M words
             'MAGIC', 'MUSIC', 'METAL', 'MONTH', 'MOUSE',
-            // N words
             'NOISE', 'NOBLE', 'NIGHT', 'NORTH', 'NEGRO',
-            // O words
             'OCEAN', 'ORBIT', 'OFFER', 'OPERA', 'OLIVE',
-            // P words
             'PAINT', 'PEACE', 'PIANO', 'POWER', 'PRICE',
-            // Q words
             'QUEEN', 'QUIET', 'QUICK', 'QUOTE', 'QUILT',
-            // R words
             'RADIO', 'RIVER', 'ROUND', 'ROYAL', 'ROBOT',
-            // S words
             'SHINE', 'SMILE', 'STORM', 'SWEET', 'SWING',
-            // T words
             'TABLE', 'TRAIN', 'TOUCH', 'TRACE', 'TRIBE',
-            // U words
             'ULTRA', 'UNITY', 'UNDER', 'URBAN', 'USAGE',
-            // V words
             'VALUE', 'VOICE', 'VIDEO', 'VIRUS', 'VINYL',
-            // W words
             'WATER', 'WORLD', 'WATCH', 'WOUND', 'WITCH',
-            // X words
             'XEROX', 'XYLEM',
-            // Y words
             'YIELD', 'YOUNG', 'YOUTH', 'YEARLY',
-            // Z words
             'ZEBRA', 'ZONES', 'ZOOM'
         ];
         
@@ -153,7 +168,9 @@
         let currentTile = 0;
         let gameOver = false;
 
-        // Initialize game board
+        // Keep track of letter states
+        const letterStates = {};
+
         function createGameBoard() {
             const gameBoard = document.getElementById('gameBoard');
             for (let i = 0; i < MAX_GUESSES; i++) {
@@ -168,7 +185,6 @@
             }
         }
 
-        // Initialize keyboard
         function createKeyboard() {
             const keyboard = document.getElementById('keyboard');
             const rows = [
@@ -185,10 +201,33 @@
                     button.className = 'key';
                     button.textContent = key;
                     button.onclick = () => handleKeyInput(key);
+                    button.setAttribute('data-key', key);
                     keyboardRow.appendChild(button);
                 });
                 keyboard.appendChild(keyboardRow);
             });
+        }
+
+        function updateKeyboardState(letter, state) {
+            // Only update if the new state is "better" than the current state
+            const statePriority = {
+                'correct': 3,
+                'wrong-position': 2,
+                'incorrect': 1,
+                'unused': 0
+            };
+
+            const currentState = letterStates[letter] || 'unused';
+            if (statePriority[state] > statePriority[currentState]) {
+                letterStates[letter] = state;
+                const keyButton = document.querySelector(`button[data-key="${letter}"]`);
+                if (keyButton) {
+                    // Remove all state classes
+                    keyButton.classList.remove('correct', 'wrong-position', 'incorrect');
+                    // Add new state class
+                    keyButton.classList.add(state);
+                }
+            }
         }
 
         function handleKeyInput(key) {
@@ -219,14 +258,17 @@
             const targetArray = targetWord.split('');
             const guessArray = guess.split('');
 
-            // Check for correct letters
+            // Check for correct letters and update keyboard
             guessArray.forEach((letter, index) => {
                 if (letter === targetArray[index]) {
                     row[index].classList.add('correct');
+                    updateKeyboardState(letter, 'correct');
                 } else if (targetArray.includes(letter)) {
                     row[index].classList.add('wrong-position');
+                    updateKeyboardState(letter, 'wrong-position');
                 } else {
                     row[index].classList.add('incorrect');
+                    updateKeyboardState(letter, 'incorrect');
                 }
             });
 
